@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  # ── Base de datos MongoDB ───────────────────────────────────
+  mongodb:
+    build: .
+    container_name: translogix_db
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: translogix2026
+      MONGO_INITDB_DATABASE: translogix_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - translogix_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # Accede en: http://localhost:8081
+  # Usuario: admin  |  Contraseña: admin123
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: translogix_mongo_express
+    restart: on-failure
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: translogix2026
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: "27017"
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    networks:
+      - translogix_net
+
+volumes:
+  mongo_data:
+    driver: local
+
+networks:
+  translogix_net:
+    driver: bridge
